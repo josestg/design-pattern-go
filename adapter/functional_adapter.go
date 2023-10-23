@@ -8,6 +8,24 @@ import (
 	"time"
 )
 
+// The HandlerFunc type is an adapter to allow the use of
+// ordinary functions as HTTP handlers. If f is a function
+// with the appropriate signature, HandlerFunc(f) is a
+// Handler that calls f.
+type HandlerFunc func(http.ResponseWriter, *http.Request)
+
+// quick check to verify if the HandlerFunc has the same signature as
+// http.Handler.ServeHTTP.
+var _ HandlerFunc = http.DefaultServeMux.ServeHTTP
+
+// quick check to verify if the HandlerFunc implements http.Handler.
+var _ http.Handler = HandlerFunc(nil)
+
+// ServeHTTP calls f(w, r).
+func (f HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	f(w, r)
+}
+
 // HealthCheckHandler handles health check request.
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	started := time.Now()
@@ -26,5 +44,5 @@ func RegisterRoutes(mux *http.ServeMux) {
 	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{}))
 	slog.SetDefault(log)
 
-	mux.HandleFunc("/api/v1/health", HealthCheckHandler)
+	mux.Handle("/api/v1/health", HandlerFunc(HealthCheckHandler))
 }
